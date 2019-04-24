@@ -15,6 +15,6 @@
   },
   "dependencies": {
     "jolocom-lib": "^2.4.3",
-    "secure-element-interface": "^0.2.0"
+    "secure-element-interface": "^0.4.0"
   }
 }
