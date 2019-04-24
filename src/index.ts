@@ -1,6 +1,7 @@
 import {IVaultedKeyProvider, IKeyDerivationArgs, KeyTypes} from 'jolocom-lib/js/vaultedKeyProvider/types';
 import {SoftwareKeyProvider} from 'jolocom-lib/js/vaultedKeyProvider/softwareProvider';
 import secureElement from 'secure-element-interface';
+import { IDigestable } from 'jolocom-lib/js/linkedDataSignature/types';
 
 interface SecureElement {
   init: () => {}
@@ -11,39 +12,34 @@ interface SecureElement {
 }
 
 export class HardwareKeyProvider implements IVaultedKeyProvider {
-  private hardware: SecureElement;
-
   constructor() {
-    
+    secureElement.init();
   }
 
   public getPublicKey(derivationArgs: IKeyDerivationArgs): Buffer {
-    switch (derivationArgs.derivationPath) {
-      case KeyTypes.jolocomIdentityKey:
-        return this.hardware.getPublicKey(0);
-      case KeyTypes.ethereumKey:
-        return this.hardware.getPublicKey(1);
-    }
-
-    throw new Error("Invalid key derivation path");
   }
 
-  public getPrivateKey(derivationArgs: IKeyDerivationArgs): Buffer {
-    throw new Error("Private key retreival forbidden");
+  public static getRandom(nr): Buffer {
+    return secureElement.getRandom(nr);
   }
 
   public sign(derivationArgs: IKeyDerivationArgs, digest: Buffer): Buffer {
-    switch (derivationArgs.derivationPath) {
-      case KeyTypes.jolocomIdentityKey:
-        return this.hardware.sign(0, digest);
-      case KeyTypes.ethereumKey:
-        return this.hardware.sign(1, digest);
-    }
+  }
 
-    throw new Error("Invalid key derivation path");
+  public static verify(digest: Buffer, publicKey: Buffer, signature: Buffer): boolean {
+  }
+
+  public getPrivateKey(derivationArgs: IKeyDerivationArgs): Buffer {
   }
 
   public async signDigestable (derivationArgs: IKeyDerivationArgs, toSign: IDigestable): Promise<Buffer> {
     return this.sign(derivationArgs, toSign.digest());
+  }
+
+  public static async verifyDigestable(publicKey: Buffer, toVerify: IDigestable): Promise<boolean> {
+  }
+
+  private getSVKP(): SoftwareKeyProvider {
+    return new SoftwareKeyProvider(secureElement.getPubkey(0), 'password');
   }
 }
