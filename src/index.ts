@@ -52,7 +52,7 @@ export class HardwareKeyProvider implements IVaultedKeyProvider {
 
   private getSVKP(): SoftwareKeyProvider {
     const buf: Buffer = this.SecEl.getPublicKey(0);
-    return new SoftwareKeyProvider(buf.slice(1, 129), this.getPass());
+    return new SoftwareKeyProvider(buf.slice(1, 33), this.getPass());
   }
 
   private fixDerivArgs(derivationArgs: IKeyDerivationArgs): IKeyDerivationArgs {
