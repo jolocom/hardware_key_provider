@@ -14,10 +14,16 @@ export class HardwareKeyProvider implements IVaultedKeyProvider {
     } catch {
       this.SecEl.generateKeyPair(0);
     }
+
+    try {
+      this.SecEl.getPublicKey(1);
+    } catch {
+      this.SecEl.generateKeyPair(1);
+    }
   }
 
   public getPublicKey(derivationArgs: IKeyDerivationArgs): Buffer {
-    return this.getSVKP().getPublicKey(derivationArgs);
+    return this.getSVKP().getPublicKey(this.fixDerivArgs(derivationArgs));
   }
 
   public getRandom(nr: number): Buffer {
@@ -25,7 +31,7 @@ export class HardwareKeyProvider implements IVaultedKeyProvider {
   }
 
   public sign(derivationArgs: IKeyDerivationArgs, digest: Buffer): Buffer {
-    return this.getSVKP().sign(derivationArgs, digest);
+    return this.getSVKP().sign(this.fixDerivArgs(derivationArgs), digest);
   }
 
   public static verify(digest: Buffer, publicKey: Buffer, signature: Buffer): boolean {
@@ -33,11 +39,11 @@ export class HardwareKeyProvider implements IVaultedKeyProvider {
   }
 
   public getPrivateKey(derivationArgs: IKeyDerivationArgs): Buffer {
-    return this.getSVKP().getPrivateKey(derivationArgs);
+    return this.getSVKP().getPrivateKey(this.fixDerivArgs(derivationArgs));
   }
 
   public async signDigestable (derivationArgs: IKeyDerivationArgs, toSign: IDigestable): Promise<Buffer> {
-    return this.getSVKP().signDigestable(derivationArgs, toSign);
+    return this.getSVKP().signDigestable(this.fixDerivArgs(derivationArgs), toSign);
   }
 
   public static async verifyDigestable(publicKey: Buffer, toVerify: IDigestable): Promise<boolean> {
@@ -46,6 +52,15 @@ export class HardwareKeyProvider implements IVaultedKeyProvider {
 
   private getSVKP(): SoftwareKeyProvider {
     const buf: Buffer = this.SecEl.getPublicKey(0);
-    return new SoftwareKeyProvider(buf.slice(1, 129), 'password');
+    return new SoftwareKeyProvider(buf.slice(1, 129), this.getPass());
+  }
+
+  private fixDerivArgs(derivationArgs: IKeyDerivationArgs): IKeyDerivationArgs {
+    return {derivationPath: derivationArgs.derivationPath,
+            encryptionPass: this.getPass()};
+  }
+
+  private getPass(): string {
+    return this.SecEl.getPublicKey(1).toString('hex', 0, 32);
   }
 }
