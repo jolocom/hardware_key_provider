@@ -61,6 +61,6 @@ export class HardwareKeyProvider implements IVaultedKeyProvider {
   }
 
   private getPass(): string {
-    return this.SecEl.getPublicKey(1).toString('hex', 0, 32);
+    return this.SecEl.getPublicKey(1).toString('hex', 1, 33);
   }
 }
