@@ -18,7 +18,7 @@
     "typescript": "^3.4.4"
   },
   "dependencies": {
-    "jolocom-lib": "^2.4.3",
+    "jolocom-lib": "^3.0.0",
     "secure-element-interface": "^0.5.6"
   }
 }
