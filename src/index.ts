@@ -1,24 +1,25 @@
-import { IVaultedKeyProvider, IKeyDerivationArgs, KeyTypes } from 'jolocom-lib/js/vaultedKeyProvider/types';
+import { IVaultedKeyProvider, IKeyDerivationArgs } from 'jolocom-lib/js/vaultedKeyProvider/types';
 import { SoftwareKeyProvider } from 'jolocom-lib/js/vaultedKeyProvider/softwareProvider';
-import { SecureElement, ISecureElement } from 'secure-element-interface';
-import { IDigestable } from 'jolocom-lib/js/linkedDataSignature/types';
+import { SecureElement } from 'secure-element-interface';
+import { IDigestible } from 'jolocom-lib/js/linkedDataSignature/types';
 
 export class HardwareKeyProvider implements IVaultedKeyProvider {
-    private readonly SecEl: ISecureElement;
+    private readonly pword: string
+    private readonly seed: Buffer
 
     constructor() {
-        this.SecEl = new SecureElement();
+        const SecEl = new SecureElement();
 
         try {
-            this.SecEl.getPublicKey(0);
+            this.seed = SecEl.getPublicKey(0).slice(0, 32);
         } catch {
-            this.SecEl.generateKeyPair(0);
+            SecEl.generateKeyPair(0);
         }
 
         try {
-            this.SecEl.getPublicKey(1);
+            this.pword = SecEl.getPublicKey(1).toString('base64').slice(0, 32);
         } catch {
-            this.SecEl.generateKeyPair(1);
+            SecEl.generateKeyPair(1);
         }
     }
 
@@ -27,7 +28,7 @@ export class HardwareKeyProvider implements IVaultedKeyProvider {
     }
 
     public getRandom(nr: number): Buffer {
-        return this.SecEl.getRandom(nr);
+        return SoftwareKeyProvider.getRandom(nr)
     }
 
     public sign(derivationArgs: IKeyDerivationArgs, digest: Buffer): Buffer {
@@ -42,27 +43,22 @@ export class HardwareKeyProvider implements IVaultedKeyProvider {
         return this.getSVKP().getPrivateKey(this.fixDerivArgs(derivationArgs));
     }
 
-    public async signDigestable(derivationArgs: IKeyDerivationArgs, toSign: IDigestable): Promise<Buffer> {
+    public async signDigestable(derivationArgs: IKeyDerivationArgs, toSign: IDigestible): Promise<Buffer> {
         return this.getSVKP().signDigestable(this.fixDerivArgs(derivationArgs), toSign);
     }
 
-    public static async verifyDigestable(publicKey: Buffer, toVerify: IDigestable): Promise<boolean> {
+    public static async verifyDigestable(publicKey: Buffer, toVerify: IDigestible): Promise<boolean> {
         return SoftwareKeyProvider.verifyDigestable(publicKey, toVerify);
     }
 
     private getSVKP(): SoftwareKeyProvider {
-        const buf: Buffer = this.SecEl.getPublicKey(0);
-        return new SoftwareKeyProvider(buf.slice(1, 33), this.getPass())
+        return SoftwareKeyProvider.fromSeed(this.seed, this.pword)
     }
 
     private fixDerivArgs(derivationArgs: IKeyDerivationArgs): IKeyDerivationArgs {
         return {
             derivationPath: derivationArgs.derivationPath,
-            encryptionPass: this.getPass()
+            encryptionPass: this.pword
         };
-    }
-
-    private getPass(): string {
-        return this.SecEl.getPublicKey(1).toString('hex', 1, 33);
     }
 }
